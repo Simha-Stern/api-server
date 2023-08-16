@@ -1,4 +1,6 @@
 import express from "express";
+import { v4 as uuidv4 } from "uuid";
+import bcrypt from "bcrypt";
 const app = express();
 app.use(express.json());
 const port = 3000;
@@ -12,15 +14,22 @@ const users = [
   },
   {
     id: "2",
-    email: "aaa@aa.aa",
+    email: "bbb@aa.aa",
     password: "12345678"
   },
   {
     id: "3",
-    email: "aaa@aa.aa",
+    email: "ccc@aa.aa",
     password: "12345678"
   },
 ];
+
+const saltRounds = 10;
+let myPlaintextPassword = null
+const someOtherPlaintextPassword = 'not_bacon';
+bcrypt.hash(myPlaintextPassword, saltRounds, function(err, hash) {
+    console.log(hash);
+});
 
 app.get("/", (req, res) => {
     res.send("working");
@@ -40,8 +49,12 @@ app.get("/users/:id", (req, res) => {
   }
 });
 
-app.post("/users", (req, res) => {
+app.post("/useradd", (req, res) => {
   const userToAdd = req.body;
+  bcrypt.hash(userToAdd.password, saltRounds, function(err, hash) {
+  userToAdd.password = hash
+});
+  userToAdd.id = uuidv4();
   users.push(userToAdd);
   res.send("user added well!");
 });
@@ -61,7 +74,22 @@ app.delete("/users/:id", (req, res) => {
     users.splice(deletUser, 1);
     res.send("user delet well!");
 
-})
+});
+
+app.post("/users", (req, res) => {
+    const userEmailTocheck = req.body.email;
+    const userByEmail = users.find((user) => user.email === userEmailTocheck)
+    const password = req.body.password
+    const match = bcrypt.compare(password, userByEmail.password)
+    if (userByEmail){
+      if (match){
+        res.send('User is connected');
+    }}else{
+      res.status(404).send('wrong credentials')
+    }
+  });
+
+
 
 app.listen(port, () => {
   console.log(`Server is up and running on port:${port}`);
