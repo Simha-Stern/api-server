@@ -1,9 +1,27 @@
 import express from "express";
+
+const app = express();
+const port = 3000;
+
 import { v4 as uuidv4 } from "uuid";
 import bcrypt from "bcrypt";
-const app = express();
+// import routes from "routes";
+// const router = routes();
+
+import validator from "email-validator";
+import passValid from 'password-validator';
+const schema = new passValid();
+schema
+.is().min(8)
+.has().uppercase()
+.has().lowercase()
+.has().not().spaces();
+
+import jsonfile  from "jsonfile";
+
 app.use(express.json());
-const port = 3000;
+const file = 'data.json';
+
 
 
 const users = [
@@ -28,7 +46,7 @@ const saltRounds = 10;
 let myPlaintextPassword = null
 const someOtherPlaintextPassword = 'not_bacon';
 bcrypt.hash(myPlaintextPassword, saltRounds, function(err, hash) {
-    console.log(hash);
+    // console.log(hash);
 });
 
 app.get("/", (req, res) => {
@@ -42,7 +60,8 @@ app.get("/users", (req, res) => {
 app.get("/users/:id", (req, res) => {
   const id = req.params.id;
   const user = users.find((user) => user.id === id);
-  if (user !== -1){
+
+  if (user){
       res.send(user);
   }else{
     res.status(404).send('not definde')
@@ -51,12 +70,21 @@ app.get("/users/:id", (req, res) => {
 
 app.post("/useradd", (req, res) => {
   const userToAdd = req.body;
+  if (!validator.validate(userToAdd.email)){
+    res.send("email us not gud")
+  } else if (!schema.validate(userToAdd.password)){
+    res.send("password us not gud");
+  }else{
   bcrypt.hash(userToAdd.password, saltRounds, function(err, hash) {
-  userToAdd.password = hash
+
+  userToAdd.password = hash;
 });
+
   userToAdd.id = uuidv4();
   users.push(userToAdd);
   res.send("user added well!");
+}
+  res.send("email us not gud");
 });
 
 app.put("/users/:id", (req, res) => {
